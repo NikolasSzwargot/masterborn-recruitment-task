@@ -123,8 +123,12 @@ export async function generatePreview(
   // For now, just return the base product image with a cache-busting param
   const timestamp = Date.now();
 
+  const url = new URL(product.imageUrl);
+  url.searchParams.set('config', config.id);
+  url.searchParams.set('t', timestamp.toString());
+
   return {
-    imageUrl: `${product.imageUrl}?config=${config.id}&t=${timestamp}`,
+    imageUrl: url.toString(),
     generatedAt: timestamp,
   };
 }
