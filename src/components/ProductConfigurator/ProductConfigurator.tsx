@@ -428,17 +428,6 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
     }
   }, []);
 
-  const handleModalKeyDown = useCallback(
-    (e: React.KeyboardEvent, modalType: 'draft' | 'share') => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        e.stopPropagation();
-        handleModalClose(modalType);
-      }
-    },
-    [handleModalClose],
-  );
-
   useEffect(() => {
     if (!showDraftModal && !showShareModal) return;
 
@@ -722,11 +711,7 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
     if (!showDraftModal) return null;
 
     return (
-      <div
-        className="modal-overlay"
-        onClick={() => handleModalClose('draft')}
-        onKeyDown={(e) => handleModalKeyDown(e, 'draft')}
-      >
+      <div className="modal-overlay" onClick={() => handleModalClose('draft')}>
         <div className="modal" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
             <h3 className="modal-title">Saved Drafts</h3>
@@ -804,11 +789,7 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
     if (!showShareModal) return null;
 
     return (
-      <div
-        className="modal-overlay"
-        onClick={() => handleModalClose('share')}
-        onKeyDown={(e) => handleModalKeyDown(e, 'share')}
-      >
+      <div className="modal-overlay" onClick={() => handleModalClose('share')}>
         <div className="modal" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
             <h3 className="modal-title">Share Configuration</h3>
