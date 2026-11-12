@@ -218,7 +218,7 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
           setIsValid(true);
         }
       } catch {
-        // Validation is best-effort and should not block configuration updates.
+        //
       }
     };
 
