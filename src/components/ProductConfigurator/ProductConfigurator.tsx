@@ -18,7 +18,7 @@
  * - "Resize handler might have a leak" - Marcus
  */
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from 'react';
 import type {
   Product,
   ProductOption,
@@ -193,6 +193,12 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
   // -------------------------------------------------------------------------
   // Effects
   // -------------------------------------------------------------------------
+
+  useLayoutEffect(() => {
+    if (!showDraftModal && !showShareModal) {
+      lastFocusedElement.current?.focus();
+    }
+  }, [showDraftModal, showShareModal]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -420,20 +426,40 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
     } else {
       setShowShareModal(false);
     }
-
-    if (lastFocusedElement.current) {
-      lastFocusedElement.current.focus();
-    }
   }, []);
 
   const handleModalKeyDown = useCallback(
     (e: React.KeyboardEvent, modalType: 'draft' | 'share') => {
       if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
         handleModalClose(modalType);
       }
     },
     [handleModalClose],
   );
+
+  useEffect(() => {
+    if (!showDraftModal && !showShareModal) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+
+        if (showDraftModal) {
+          handleModalClose('draft');
+        } else {
+          handleModalClose('share');
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [showDraftModal, showShareModal, handleModalClose]);
 
   const handleDiscardChanges = useCallback(() => {
     setSelections(getDefaultSelections(product));
