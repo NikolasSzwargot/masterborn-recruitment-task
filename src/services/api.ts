@@ -220,7 +220,10 @@ export function encodeConfigurationToUrl(config: Configuration): string {
     n: config.name,
   });
 
-  return btoa(data);
+  const bytes = new TextEncoder().encode(data);
+  const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join('');
+
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
 /**
@@ -228,15 +231,23 @@ export function encodeConfigurationToUrl(config: Configuration): string {
  */
 export function decodeConfigurationFromUrl(encoded: string): Partial<Configuration> | null {
   try {
-    const data = JSON.parse(atob(encoded));
+    const base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+
+    const binary = atob(base64);
+
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+
+    const json = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    const data = JSON.parse(json);
+
     return {
-      selections: data.s || {},
-      addOns: data.a || [],
-      quantity: data.q || 1,
+      selections: data.s ?? {},
+      addOns: data.a ?? [],
+      quantity: data.q ?? 1,
       name: data.n,
     };
-  } catch (e) {
-    console.error('Failed to decode configuration:', e);
+  } catch (error) {
+    console.error('Failed to decode configuration:', error);
     return null;
   }
 }
