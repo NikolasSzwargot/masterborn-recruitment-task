@@ -614,13 +614,38 @@
 .btn:focus,
 .option-select:focus,
 .quantity-input:focus,
-.toggle-switch:focus {
+.toggle-switch:focus,
+.color-swatch:focus {
   outline: 2px solid #3498db;
   outline-offset: 2px;
 }
 
-/* Missing focus style for color swatches - accessibility issue */
-/* .color-swatch:focus { } */
+.quantity-btn:focus {
+  outline: 2px solid #3498db;
+  outline-offset: 2px;
+}
+
+.color-swatch-label {
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.color-swatch-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.color-swatch-input:focus-visible + .color-swatch {
+  outline: 3px solid #2563eb;
+  outline-offset: 3px;
+}
+
+.color-swatch-input:disabled + .color-swatch {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
 
 /* Draft List in Modal */
 .draft-list {

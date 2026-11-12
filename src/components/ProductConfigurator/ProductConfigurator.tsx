@@ -490,15 +490,24 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
           aria-label={option.name}
         >
           {option.choices?.map((choice, index) => (
-            <div
-              key={index}
-              className={`color-swatch ${currentValue === choice.value ? 'selected' : ''}`}
-              style={{ backgroundColor: choice.colorHex }}
-              onClick={() => !readOnly && handleOptionChange(option.id, choice.value)}
-              title={choice.label}
-              role="radio"
-              aria-checked={currentValue === choice.value}
-            />
+            <label key={index} className="color-swatch-label">
+              <input
+                type="radio"
+                name={option.id}
+                value={choice.value}
+                checked={currentValue === choice.value}
+                onChange={() => handleOptionChange(option.id, choice.value)}
+                disabled={readOnly}
+                className="color-swatch-input"
+                aria-label={choice.label}
+              />
+
+              <span
+                className={`color-swatch ${currentValue === choice.value ? 'selected' : ''}`}
+                style={{ backgroundColor: choice.colorHex }}
+                aria-hidden="true"
+              />
+            </label>
           ))}
         </div>
       </div>
