@@ -30,45 +30,59 @@ export function usePriceCalculation(
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Track latest request timestamp to prevent stale responses from overwriting newer ones.
+  // Track latest request id to prevent stale responses from overwriting newer ones.
   // Guards against race conditions when the user changes options in rapid succession.
   const latestRequestRef = useRef<number>(0);
 
   const fetchPrice = useCallback(async () => {
     if (!config) {
+      latestRequestRef.current += 1;
       setPrice(null);
       setFormattedTotal('$0.00');
+      setIsLoading(false);
       return;
     }
 
     setIsLoading(true);
     setError(null);
 
-    const requestTime = Date.now();
-    latestRequestRef.current = requestTime;
+    const requestId = ++latestRequestRef.current;
 
     try {
       const response: PriceResponse = await calculatePrice(config, product);
 
-      if (response.timestamp >= latestRequestRef.current) {
-        setPrice(response.breakdown);
-        setFormattedTotal(response.formattedTotal);
+      if (requestId !== latestRequestRef.current) {
+        return;
       }
+
+      setPrice(response.breakdown);
+      setFormattedTotal(response.formattedTotal);
     } catch {
       // Only set error if this is still the latest request
-      if (requestTime === latestRequestRef.current) {
-        setError('ERR_PRICE_CALC_FAILED');
-        setPrice(null);
+      if (requestId !== latestRequestRef.current) {
+        return;
       }
+      setError('ERR_PRICE_CALC_FAILED');
+      setPrice(null);
     } finally {
-      setIsLoading(false);
+      if (requestId === latestRequestRef.current) {
+        setIsLoading(false);
+      }
     }
   }, [config, product]);
 
   // Fetch price when config changes
   useEffect(() => {
-    fetchPrice();
-  }, [config?.selections, config?.addOns, config?.quantity]);
+    // TODO: Temporary workaround for react-hooks/set-state-in-effect.
+    // Defer fetching to avoid synchronous state updates inside the effect.
+    // Consider refactoring async state management in the future.
+    const timeoutId = setTimeout(fetchPrice, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+      latestRequestRef.current += 1;
+    };
+  }, [fetchPrice]);
 
   return {
     price,
@@ -102,16 +116,16 @@ export function useDebouncedPriceCalculation(
       clearTimeout(timeoutRef.current);
     }
 
-    if (!config) {
-      setPrice(null);
-      setFormattedTotal('$0.00');
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-
     timeoutRef.current = setTimeout(async () => {
+      if (!config) {
+        setPrice(null);
+        setFormattedTotal('$0.00');
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+
       try {
         const response = await calculatePrice(configRef.current!, product);
         setPrice(response.breakdown);
