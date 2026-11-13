@@ -406,10 +406,24 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
   }, [validation, price, currentConfig, onAddToCart]);
 
   const handleQuickAdd = useCallback(() => {
-    if (price && onAddToCart) {
+    if (!readOnly && validation?.valid && price && onAddToCart) {
       onAddToCart(currentConfig, price);
     }
-  }, [price, currentConfig, onAddToCart]);
+  }, [readOnly, validation?.valid, price, onAddToCart, currentConfig]);
+
+  useEffect(() => {
+    const handleQuickAddShortcut = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+        event.preventDefault();
+        handleQuickAdd();
+      }
+    };
+    window.addEventListener('keydown', handleQuickAddShortcut);
+
+    return () => {
+      window.removeEventListener('keydown', handleQuickAddShortcut);
+    };
+  }, [handleQuickAdd]);
 
   const handleCopyShareUrl = useCallback(() => {
     navigator.clipboard
