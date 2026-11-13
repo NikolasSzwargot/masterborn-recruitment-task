@@ -18,7 +18,7 @@
  * - "Resize handler might have a leak" - Marcus
  */
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from 'react';
 import type {
   Product,
   ProductOption,
@@ -193,6 +193,12 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
   // -------------------------------------------------------------------------
   // Effects
   // -------------------------------------------------------------------------
+
+  useLayoutEffect(() => {
+    if (!showDraftModal && !showShareModal) {
+      lastFocusedElement.current?.focus();
+    }
+  }, [showDraftModal, showShareModal]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -420,20 +426,29 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
     } else {
       setShowShareModal(false);
     }
-
-    if (lastFocusedElement.current) {
-      lastFocusedElement.current.focus();
-    }
   }, []);
 
-  const handleModalKeyDown = useCallback(
-    (e: React.KeyboardEvent, modalType: 'draft' | 'share') => {
-      if (e.key === 'Escape') {
-        handleModalClose(modalType);
+  useEffect(() => {
+    if (!showDraftModal && !showShareModal) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+
+        if (showDraftModal) {
+          handleModalClose('draft');
+        } else {
+          handleModalClose('share');
+        }
       }
-    },
-    [handleModalClose],
-  );
+    };
+
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [showDraftModal, showShareModal, handleModalClose]);
 
   const handleDiscardChanges = useCallback(() => {
     setSelections(getDefaultSelections(product));
@@ -490,15 +505,24 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
           aria-label={option.name}
         >
           {option.choices?.map((choice, index) => (
-            <div
-              key={index}
-              className={`color-swatch ${currentValue === choice.value ? 'selected' : ''}`}
-              style={{ backgroundColor: choice.colorHex }}
-              onClick={() => !readOnly && handleOptionChange(option.id, choice.value)}
-              title={choice.label}
-              role="radio"
-              aria-checked={currentValue === choice.value}
-            />
+            <label key={index} className="color-swatch-label">
+              <input
+                type="radio"
+                name={option.id}
+                value={choice.value}
+                checked={currentValue === choice.value}
+                onChange={() => handleOptionChange(option.id, choice.value)}
+                disabled={readOnly}
+                className="color-swatch-input"
+                aria-label={choice.label}
+              />
+
+              <span
+                className={`color-swatch ${currentValue === choice.value ? 'selected' : ''}`}
+                style={{ backgroundColor: choice.colorHex }}
+                aria-hidden="true"
+              />
+            </label>
           ))}
         </div>
       </div>
@@ -687,11 +711,7 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
     if (!showDraftModal) return null;
 
     return (
-      <div
-        className="modal-overlay"
-        onClick={() => handleModalClose('draft')}
-        onKeyDown={(e) => handleModalKeyDown(e, 'draft')}
-      >
+      <div className="modal-overlay" onClick={() => handleModalClose('draft')}>
         <div className="modal" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
             <h3 className="modal-title">Saved Drafts</h3>
@@ -769,11 +789,7 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
     if (!showShareModal) return null;
 
     return (
-      <div
-        className="modal-overlay"
-        onClick={() => handleModalClose('share')}
-        onKeyDown={(e) => handleModalKeyDown(e, 'share')}
-      >
+      <div className="modal-overlay" onClick={() => handleModalClose('share')}>
         <div className="modal" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
             <h3 className="modal-title">Share Configuration</h3>
